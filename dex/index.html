@@ -21,13 +21,46 @@
     <button id="run-btn" title="Run (Ctrl+Enter)">Run query</button>
     <select id="examples">
       <option value="">— Examples —</option>
-      <option value="SELECT name, base_friendship FROM pokemon ORDER BY base_friendship DESC LIMIT 10;">10 Pokemon with highest base friendship</option>
-      <option value="SELECT p.name, fbs.speed&#10;FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id AND pf.form_name IS NULL&#10;JOIN form_base_stats fbs ON fbs.form_id = pf.id&#10;WHERE fbs.generation = 9&#10;ORDER BY fbs.speed DESC LIMIT 20;">Top 20 fastest Pokemon (Gen 9)</option>
-      <option value="SELECT DISTINCT p.name FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id&#10;JOIN learnset_levelup l ON l.form_id = pf.id&#10;JOIN moves m ON m.id = l.move_id&#10;WHERE m.name = 'Quick Attack' AND l.generation = 9&#10;ORDER BY p.id;">Pokemon that learn Quick Attack via level-up (Gen 9)</option>
-      <option value="SELECT attacking_type, defending_type, multiplier FROM type_matchups&#10;WHERE generation = 1 AND multiplier != 1&#10;ORDER BY attacking_type, defending_type;">Gen 1 type chart (only effective matchups)</option>
-      <option value="SELECT m.name, m.type, m.power, m.accuracy, m.priority, m.effect&#10;FROM moves m&#10;WHERE m.priority &gt; 0 AND m.category != 'Status'&#10;ORDER BY m.priority DESC, m.power DESC;">All priority damaging moves</option>
-      <option value="SELECT name, generation_introduced FROM abilities&#10;WHERE generation_introduced = 9 ORDER BY name;">Abilities introduced in Gen 9</option>
-      <option value="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;">List all tables</option>
+      <optgroup label="Schema">
+        <option value="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;">List all tables</option>
+      </optgroup>
+      <optgroup label="Pokemon basics">
+        <option value="SELECT name, base_friendship FROM pokemon ORDER BY base_friendship DESC LIMIT 10;">pokemon: 10 Pokemon with highest base friendship</option>
+        <option value="SELECT language, name, romanized FROM pokemon_names&#10;WHERE pokemon_id = 25 ORDER BY language;">pokemon_names: Pikachu's name in every language</option>
+        <option value="SELECT id, form_name, is_mega, height_m, weight_kg FROM pokemon_forms&#10;WHERE pokemon_id = 6;">pokemon_forms: All forms of Charizard</option>
+        <option value="SELECT dex_name, dex_number FROM pokedex_numbers&#10;WHERE pokemon_id = 25 ORDER BY dex_number;">pokedex_numbers: Pikachu's regional Dex numbers</option>
+        <option value="SELECT game, generation, entry_text FROM pokedex_entries&#10;WHERE pokemon_id = 150 ORDER BY generation, game;">pokedex_entries: Mewtwo's flavor text by game</option>
+        <option value="SELECT name FROM egg_groups ORDER BY name;">egg_groups: List all egg groups</option>
+        <option value="SELECT p.id, p.name FROM pokemon p&#10;JOIN pokemon_egg_groups peg ON peg.pokemon_id = p.id&#10;WHERE peg.egg_group = 'Dragon' ORDER BY p.id;">pokemon_egg_groups: All Pokemon in the Dragon egg group</option>
+        <option value="SELECT game, generation, method FROM game_availability&#10;WHERE pokemon_id = 151 ORDER BY generation;">game_availability: How to get Mew across games</option>
+      </optgroup>
+      <optgroup label="Stats, types, abilities">
+        <option value="SELECT p.name, fbs.speed&#10;FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id AND pf.form_name IS NULL&#10;JOIN form_base_stats fbs ON fbs.form_id = pf.id&#10;WHERE fbs.generation = 9&#10;ORDER BY fbs.speed DESC LIMIT 20;">form_base_stats: Top 20 fastest Pokemon (Gen 9)</option>
+        <option value="SELECT p.name, ft.type1, ft.type2 FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id AND pf.form_name IS NULL&#10;JOIN form_types ft ON ft.form_id = pf.id&#10;WHERE ft.generation = 9 AND (ft.type1 = 'Fairy' OR ft.type2 = 'Fairy')&#10;ORDER BY p.id;">form_types: All Fairy-type Pokemon (Gen 9)</option>
+        <option value="SELECT DISTINCT p.name FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id&#10;JOIN form_abilities fa ON fa.form_id = pf.id&#10;WHERE fa.ability = 'Levitate' AND fa.generation = 9&#10;ORDER BY p.id;">form_abilities: Pokemon with Levitate (Gen 9)</option>
+        <option value="SELECT p.name, fey.stat, fey.value FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id AND pf.form_name IS NULL&#10;JOIN form_ev_yield fey ON fey.form_id = pf.id&#10;WHERE fey.value &gt;= 3 AND fey.generation = 9&#10;ORDER BY fey.stat, p.id;">form_ev_yield: Pokemon yielding 3 EVs (Gen 9)</option>
+        <option value="SELECT name FROM types ORDER BY name;">types: All 18 types</option>
+        <option value="SELECT attacking_type, defending_type, multiplier FROM type_matchups&#10;WHERE generation = 1 AND multiplier != 1&#10;ORDER BY attacking_type, defending_type;">type_matchups: Gen 1 type chart (effective matchups)</option>
+        <option value="SELECT name, generation_introduced FROM abilities&#10;WHERE generation_introduced = 9 ORDER BY name;">abilities: Abilities introduced in Gen 9</option>
+      </optgroup>
+      <optgroup label="Stat changes between generations">
+        <option value="-- Pokemon whose base stat total changed between generations.&#10;WITH stat_totals AS (&#10;  SELECT pf.pokemon_id, fbs.generation,&#10;         (fbs.hp + fbs.attack + fbs.defense&#10;          + fbs.sp_attack + fbs.sp_defense + fbs.speed) AS total&#10;  FROM form_base_stats fbs&#10;  JOIN pokemon_forms pf ON pf.id = fbs.form_id&#10;  WHERE pf.form_name IS NULL&#10;)&#10;SELECT p.name, st.generation, st.total&#10;FROM stat_totals st&#10;JOIN pokemon p ON p.id = st.pokemon_id&#10;WHERE st.pokemon_id IN (&#10;  SELECT pokemon_id FROM stat_totals&#10;  GROUP BY pokemon_id HAVING COUNT(DISTINCT total) &gt; 1&#10;)&#10;ORDER BY p.id, st.generation;">Pokemon whose stat total changed between gens</option>
+        <option value="-- Specific stat changes per Pokemon, joined by stat name.&#10;WITH s AS (&#10;  SELECT pf.pokemon_id, fbs.generation,&#10;         fbs.hp, fbs.attack, fbs.defense,&#10;         fbs.sp_attack, fbs.sp_defense, fbs.speed&#10;  FROM form_base_stats fbs&#10;  JOIN pokemon_forms pf ON pf.id = fbs.form_id&#10;  WHERE pf.form_name IS NULL&#10;)&#10;SELECT p.name, s.generation, s.hp, s.attack, s.defense,&#10;       s.sp_attack, s.sp_defense, s.speed&#10;FROM s&#10;JOIN pokemon p ON p.id = s.pokemon_id&#10;WHERE s.pokemon_id IN (&#10;  SELECT pokemon_id FROM s&#10;  GROUP BY pokemon_id&#10;  HAVING COUNT(DISTINCT hp||','||attack||','||defense||','&#10;                       ||sp_attack||','||sp_defense||','||speed) &gt; 1&#10;)&#10;ORDER BY p.id, s.generation;">Per-stat changes by generation</option>
+        <option value="-- Pokemon whose primary type changed between generations.&#10;WITH t AS (&#10;  SELECT pf.pokemon_id, ft.generation, ft.type1, ft.type2&#10;  FROM form_types ft&#10;  JOIN pokemon_forms pf ON pf.id = ft.form_id&#10;  WHERE pf.form_name IS NULL&#10;)&#10;SELECT p.name, t.generation, t.type1, t.type2&#10;FROM t JOIN pokemon p ON p.id = t.pokemon_id&#10;WHERE t.pokemon_id IN (&#10;  SELECT pokemon_id FROM t&#10;  GROUP BY pokemon_id&#10;  HAVING COUNT(DISTINCT type1||'/'||COALESCE(type2,'')) &gt; 1&#10;)&#10;ORDER BY p.id, t.generation;">Pokemon whose type changed between gens</option>
+      </optgroup>
+      <optgroup label="Moves &amp; learnsets">
+        <option value="SELECT m.name, m.type, m.power, m.accuracy, m.priority, m.effect&#10;FROM moves m&#10;WHERE m.priority &gt; 0 AND m.category != 'Status'&#10;ORDER BY m.priority DESC, m.power DESC;">moves: All priority damaging moves</option>
+        <option value="SELECT name, type, accuracy, pp, effect FROM moves&#10;WHERE category = 'Status' AND effect LIKE '%paralyz%'&#10;ORDER BY name;">moves: Status moves that paralyze</option>
+        <option value="SELECT DISTINCT p.name FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id&#10;JOIN learnset_levelup l ON l.form_id = pf.id&#10;JOIN moves m ON m.id = l.move_id&#10;WHERE m.name = 'Quick Attack' AND l.generation = 9&#10;ORDER BY p.id;">learnset_levelup: Pokemon that learn Quick Attack (Gen 9)</option>
+        <option value="SELECT m.name AS move, lt.tm_number FROM learnset_tm lt&#10;JOIN moves m ON m.id = lt.move_id&#10;JOIN pokemon_forms pf ON pf.id = lt.form_id&#10;WHERE pf.pokemon_id = 1 AND pf.form_name IS NULL AND lt.generation = 9&#10;ORDER BY m.name;">learnset_tm: TMs Bulbasaur can learn (Gen 9)</option>
+        <option value="SELECT DISTINCT p.name FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id&#10;JOIN learnset_egg le ON le.form_id = pf.id&#10;JOIN moves m ON m.id = le.move_id&#10;WHERE m.name = 'Dragon Dance' AND le.generation = 9&#10;ORDER BY p.id;">learnset_egg: Pokemon with Dragon Dance as egg move (Gen 9)</option>
+        <option value="SELECT DISTINCT m.name FROM moves m&#10;JOIN learnset_tutor lt ON lt.move_id = m.id&#10;JOIN pokemon_forms pf ON pf.id = lt.form_id&#10;WHERE pf.pokemon_id = 150&#10;ORDER BY m.name;">learnset_tutor: Tutor moves Mewtwo can learn</option>
+        <option value="SELECT p.name, m.name AS move, lo.method, lo.detail, lo.generation&#10;FROM learnset_other lo&#10;JOIN moves m ON m.id = lo.move_id&#10;JOIN pokemon_forms pf ON pf.id = lo.form_id&#10;JOIN pokemon p ON p.id = pf.pokemon_id&#10;WHERE lo.method = 'event' AND lo.generation = 9&#10;ORDER BY p.id LIMIT 30;">learnset_other: Event-only moves (Gen 9)</option>
+        <option value="SELECT tm_number, game, move_name, generation FROM tm_index&#10;WHERE tm_number = 'TM01' ORDER BY generation, game;">tm_index: What TM01 teaches across all games</option>
+      </optgroup>
+      <optgroup label="Evolution">
+        <option value="SELECT from_pokemon, to_pokemon, detail FROM evolution_methods&#10;WHERE method = 'stone' ORDER BY from_pokemon;">evolution_methods: All stone-based evolutions</option>
+      </optgroup>
     </select>
     <span id="run-info"></span>
   </div>
