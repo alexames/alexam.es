@@ -59,7 +59,7 @@
         <option value="SELECT tm_number, game, move_name, generation FROM tm_index&#10;WHERE tm_number = 'TM01' ORDER BY generation, game;">tm_index: What TM01 teaches across all games</option>
       </optgroup>
       <optgroup label="Evolution">
-        <option value="SELECT from_pokemon, to_pokemon, detail FROM evolution_methods&#10;WHERE method = 'stone' ORDER BY from_pokemon;">evolution_methods: All stone-based evolutions</option>
+        <option value="SELECT from_pokemon, to_pokemon, detail, generation_introduced AS gen&#10;FROM evolution_methods&#10;WHERE method = 'stone' ORDER BY gen, from_pokemon;">evolution_methods: All stone-based evolutions</option>
       </optgroup>
     </select>
     <span id="run-info"></span>
