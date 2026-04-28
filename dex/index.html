@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dex — Pokemon SQL Explorer</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Dex</h1>
+</header>
+
+<section id="status">Loading SQLite engine and database (~20 MB)…</section>
+
+<section id="editor-section" hidden>
+  <div id="editor-toolbar">
+    <button id="run-btn" title="Run (Ctrl+Enter)">Run query</button>
+    <select id="examples">
+      <option value="">— Examples —</option>
+      <option value="SELECT name, base_friendship FROM pokemon ORDER BY base_friendship DESC LIMIT 10;">10 Pokemon with highest base friendship</option>
+      <option value="SELECT p.name, fbs.speed&#10;FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id AND pf.form_name IS NULL&#10;JOIN form_base_stats fbs ON fbs.form_id = pf.id&#10;WHERE fbs.generation = 9&#10;ORDER BY fbs.speed DESC LIMIT 20;">Top 20 fastest Pokemon (Gen 9)</option>
+      <option value="SELECT DISTINCT p.name FROM pokemon p&#10;JOIN pokemon_forms pf ON pf.pokemon_id = p.id&#10;JOIN learnset_levelup l ON l.form_id = pf.id&#10;JOIN moves m ON m.id = l.move_id&#10;WHERE m.name = 'Quick Attack' AND l.generation = 9&#10;ORDER BY p.id;">Pokemon that learn Quick Attack via level-up (Gen 9)</option>
+      <option value="SELECT attacking_type, defending_type, multiplier FROM type_matchups&#10;WHERE generation = 1 AND multiplier != 1&#10;ORDER BY attacking_type, defending_type;">Gen 1 type chart (only effective matchups)</option>
+      <option value="SELECT m.name, m.type, m.power, m.accuracy, m.priority, m.effect&#10;FROM moves m&#10;WHERE m.priority &gt; 0 AND m.category != 'Status'&#10;ORDER BY m.priority DESC, m.power DESC;">All priority damaging moves</option>
+      <option value="SELECT name, generation_introduced FROM abilities&#10;WHERE generation_introduced = 9 ORDER BY name;">Abilities introduced in Gen 9</option>
+      <option value="SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;">List all tables</option>
+    </select>
+    <span id="run-info"></span>
+  </div>
+  <textarea id="editor"></textarea>
+</section>
+
+<section id="results-section"></section>
+
+<section id="schema-section" hidden>
+  <details>
+    <summary>Schema</summary>
+    <div id="schema-list"></div>
+  </details>
+</section>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/sql/sql.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/sql-hint.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
